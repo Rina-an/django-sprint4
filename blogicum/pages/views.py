@@ -3,17 +3,13 @@ from django.shortcuts import render
 
 
 class AboutPage(TemplateView):
-    """
-    Класс для статической страницы "О проекте".
-    """
+    """Класс для статической страницы "О проекте"."""
 
     template_name = 'pages/about.html'
 
 
 class RulesPage(TemplateView):
-    """
-    Класс для статической страницы "Правила".
-    """
+    """Класс для статической страницы "Правила"."""
 
     template_name = 'pages/rules.html'
 

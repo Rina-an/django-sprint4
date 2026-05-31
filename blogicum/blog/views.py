@@ -36,16 +36,12 @@ def get_published_posts(queryset):
 
 
 def add_comment_count(queryset):
-    """
-    Добавляет количество комментариев к постам.
-    """
+    """Добавляет количество комментариев к постам. """
     return queryset.annotate(comment_count=Count('comments'))
 
 
 class IndexListView(ListView):
-    """
-    Класс для отображения главной страницы.
-    """
+    """Класс для отображения главной страницы."""
 
     model = Post
     template_name = "blog/index.html"
@@ -58,9 +54,7 @@ class IndexListView(ListView):
 
 
 class OnlyAuthorMixin(UserPassesTestMixin):
-    """
-    Миксин для установления авторства постов.
-    """
+    """Миксин для установления авторства постов."""
 
     def test_func(self):
         object = self.get_object()
@@ -68,9 +62,7 @@ class OnlyAuthorMixin(UserPassesTestMixin):
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
-    """
-    Класс для создания новой публикации.
-    """
+    """Класс для создания новой публикации."""
 
     model = Post
     form_class = PostForm
@@ -88,9 +80,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
 
 class PostUpdateView(OnlyAuthorMixin, UpdateView):
-    """
-    Класс для редактирования публикации ее автором.
-    """
+    """Класс для редактирования публикации ее автором."""
 
     model = Post
     form_class = PostForm
@@ -109,9 +99,7 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
 
 
 class PostDeleteView(OnlyAuthorMixin, DeleteView):
-    """
-    Класс для удаления публикации ее автором.
-    """
+    """Класс для удаления публикации ее автором."""
 
     model = Post
     pk_url_kwarg = 'post_id'
@@ -123,9 +111,7 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
-    """
-    Класс для создания комментария.
-    """
+    """Класс для создания комментария."""
 
     model = Comment
     form_class = CommentForm
@@ -148,9 +134,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
 
 class CommentUpdateView(LoginRequiredMixin, OnlyAuthorMixin, UpdateView):
-    """
-    Класс для изменение комментария его автором.
-    """
+    """Класс для изменение комментария его автором."""
 
     model = Comment
     form_class = CommentForm
@@ -165,9 +149,7 @@ class CommentUpdateView(LoginRequiredMixin, OnlyAuthorMixin, UpdateView):
 
 
 class CommentDeleteView(LoginRequiredMixin, OnlyAuthorMixin, DeleteView):
-    """
-    Класс для удаления комментария его автором.
-    """
+    """Класс для удаления комментария его автором."""
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
