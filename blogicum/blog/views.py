@@ -36,7 +36,7 @@ def get_published_posts(queryset):
 
 
 def add_comment_count(queryset):
-    """Добавляет количество комментариев к постам. """
+    """Добавляет количество комментариев к постам."""
     return queryset.annotate(comment_count=Count('comments'))
 
 
@@ -150,6 +150,7 @@ class CommentUpdateView(LoginRequiredMixin, OnlyAuthorMixin, UpdateView):
 
 class CommentDeleteView(LoginRequiredMixin, OnlyAuthorMixin, DeleteView):
     """Класс для удаления комментария его автором."""
+
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
