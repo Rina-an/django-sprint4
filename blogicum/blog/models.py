@@ -1,7 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from blog.constants import DEFAULT_TITLE_LENGTH, DEFAULT_LOCATION_NAME_LENGTH
+from blog.constants import (
+    DEFAULT_COMMENT_LENGTH,
+    DEFAULT_LOCATION_NAME_LENGTH,
+    DEFAULT_TITLE_LENGTH,
+)
 
 User = get_user_model()
 
@@ -105,7 +109,7 @@ class Post(CreatedPublishedModel):
         return self.title[:DEFAULT_TITLE_LENGTH]
 
 
-class Comment(models.Model):
+class Comment(CreatedPublishedModel):
     """Модель комментария."""
 
     text = models.TextField('Текст комментария')
@@ -115,7 +119,15 @@ class Comment(models.Model):
         related_name='comments',
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='author')
 
     class Meta:
+        verbose_name = "комментарий"
+        verbose_name_plural = "Коментарии"
         ordering = ('created_at',)
+
+    def __str__(self):
+        return self.text[:DEFAULT_COMMENT_LENGTH]

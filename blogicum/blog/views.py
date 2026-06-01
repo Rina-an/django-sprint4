@@ -1,38 +1,21 @@
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
-from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.urls import reverse
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    UpdateView,
+)
 
 from blog.constants import DEFAULT_POSTS_PER_PAGE
 from blog.forms import CommentForm, PostForm, UserEditForm
+from blog.mixins import OnlyAuthorMixin
 from blog.models import Category, Comment, Post
-from blog.utils import paginate_queryset
-
-
-# Получился какой-то ужас :(
-
-def get_published_posts(queryset):
-    """
-    Метод для фильтрации публикаций по:
-    - is_published=True
-    - категория опубликована
-    - дата публикации не позже текущего времени
-
-    Также добавляем select_related для оптимизации запросов.
-    """
-    return queryset.select_related(
-        "category",
-        "author",
-        "location"
-    ).filter(
-        is_published=True,
-        category__is_published=True,
-        pub_date__lte=timezone.now()
-    ).order_by('-pub_date')
+from blog.utils import get_published_posts, paginate_queryset
 
 
 def add_comment_count(queryset):
@@ -51,14 +34,6 @@ class IndexListView(ListView):
         return add_comment_count(
             get_published_posts(Post.objects.all())
         )
-
-
-class OnlyAuthorMixin(UserPassesTestMixin):
-    """Миксин для установления авторства постов."""
-
-    def test_func(self):
-        object = self.get_object()
-        return object.author == self.request.user
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -102,7 +77,13 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
     """Класс для удаления публикации ее автором."""
 
     model = Post
+    template_name = 'blog/create.html'
     pk_url_kwarg = 'post_id'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = PostForm(instance=self.object)
+        return context
 
     def get_success_url(self):
         return reverse('blog:profile', kwargs={
@@ -117,24 +98,23 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     form_class = CommentForm
     template_name = 'blog/comment.html'
 
-    def dispatch(self, request, *args, **kwargs):
-        self.post_obj = get_object_or_404(Post, pk=kwargs['post_id'])
-        return super().dispatch(request, *args, **kwargs)
-
     def form_valid(self, form):
-        comment = form.save(commit=False)
-        comment.author = self.request.user
-        comment.post = self.post_obj
-        comment.save()
+        form.instance.author = self.request.user
+        form.instance.post = get_object_or_404(
+            Post,
+            pk=self.kwargs['post_id']
+        )
+        return super().form_valid(form)
 
-        return redirect(
+    def get_success_url(self):
+        return reverse(
             'blog:post_detail',
-            post_id=self.post_obj.id
+            kwargs={'post_id': self.object.post.id}
         )
 
 
 class CommentUpdateView(LoginRequiredMixin, OnlyAuthorMixin, UpdateView):
-    """Класс для изменение комментария его автором."""
+    """Класс для изменения комментария его автором."""
 
     model = Comment
     form_class = CommentForm
@@ -142,7 +122,7 @@ class CommentUpdateView(LoginRequiredMixin, OnlyAuthorMixin, UpdateView):
     pk_url_kwarg = 'comment_id'
 
     def get_success_url(self):
-        return reverse_lazy(
+        return reverse(
             'blog:post_detail',
             kwargs={'post_id': self.object.post.id}
         )
@@ -156,7 +136,7 @@ class CommentDeleteView(LoginRequiredMixin, OnlyAuthorMixin, DeleteView):
     pk_url_kwarg = 'comment_id'
 
     def get_success_url(self):
-        return reverse_lazy('blog:post_detail', kwargs={
+        return reverse('blog:post_detail', kwargs={
             'post_id': self.object.post.id})
 
 
@@ -169,7 +149,9 @@ def post_detail(request, post_id):
             get_published_posts(Post.objects.all()),
             pk=post_id
         )
-    comments = post.comments.all().order_by('created_at')
+    comments = post.comments.select_related("author").all().order_by(
+        'created_at'
+    )
     context = context = {
         'post': post,
         'comments': comments,
@@ -195,9 +177,17 @@ def category_posts(request, category_slug):
 def profile(request, username):
     """Метод для рендеринга страницы пользователя."""
     profile = get_object_or_404(User, username=username)
-    posts = add_comment_count(
-        Post.objects.filter(author=profile)
-    ).order_by('-pub_date')
+    if request.user != profile:
+        posts = get_published_posts(
+            Post.objects.filter(author=profile),
+            post_filter=True
+        )
+    else:
+        posts = get_published_posts(
+            Post.objects.filter(author=profile),
+            post_filter=False
+        )
+    posts = add_comment_count(posts)
     context = {
         'profile': profile,
         'page_obj': paginate_queryset(request, posts),

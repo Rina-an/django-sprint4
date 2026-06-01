@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Location, Post
+from blog.models import Category, Location, Post, Comment
 
 
 class Postline(admin.TabularInline):
@@ -8,6 +8,7 @@ class Postline(admin.TabularInline):
     extra = 0
 
 
+@admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = (
         "title",
@@ -23,6 +24,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display_links = ("title",)
 
 
+@admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
     list_display = (
         "name",
@@ -36,6 +38,7 @@ class LocationAdmin(admin.ModelAdmin):
     empty_value_display = "Не задано"
 
 
+@admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = (
         "title",
@@ -58,6 +61,19 @@ class PostAdmin(admin.ModelAdmin):
     empty_value_display = "Не задано"
 
 
-admin.site.register(Category, CategoryAdmin)
-admin.site.register(Location, LocationAdmin)
-admin.site.register(Post, PostAdmin)
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = (
+        "text",
+        "is_published",
+        "created_at",
+        "author"
+    )
+    list_editable = ("is_published",)
+    search_fields = ("text",)
+    list_display_links = ("text",)
+    list_filter = (
+        "author",
+        "is_published"
+    )
+    empty_value_display = "Не задано"
