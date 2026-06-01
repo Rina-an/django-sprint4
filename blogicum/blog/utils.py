@@ -18,11 +18,15 @@ def paginate_queryset(
 def get_published_posts(queryset, post_filter=True):
     """
     Метод для фильтрации публикаций.
-    Если юзер != автор, то филтруем по:
+
+    Если post_filter=True, то фильтруем посты по:
     - is_published=True
     - категория опубликована
     - дата публикации не позже текущего времени
-    Если юзер = автор, то показываем все посты.
+
+    Если post_filter=False:
+    - возвращаем все посты.
+
     Также добавляем select_related для оптимизации запросов.
     """
     queryset = queryset.select_related(
@@ -31,7 +35,7 @@ def get_published_posts(queryset, post_filter=True):
         'location'
     )
 
-    if post_filter:
+    if post_filter is True:
         queryset = queryset.filter(
             is_published=True,
             category__is_published=True,
