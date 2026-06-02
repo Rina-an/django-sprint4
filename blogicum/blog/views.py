@@ -1,7 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import (
@@ -15,12 +14,11 @@ from blog.constants import DEFAULT_POSTS_PER_PAGE
 from blog.forms import CommentForm, PostForm, UserEditForm
 from blog.mixins import OnlyAuthorMixin
 from blog.models import Category, Comment, Post
-from blog.utils import get_published_posts, paginate_queryset
-
-
-def add_comment_count(queryset):
-    """Добавляет количество комментариев к постам."""
-    return queryset.annotate(comment_count=Count('comments'))
+from blog.utils import (
+    get_published_posts,
+    paginate_queryset,
+    add_comment_count
+)
 
 
 class IndexListView(ListView):
@@ -177,17 +175,12 @@ def category_posts(request, category_slug):
 def profile(request, username):
     """Метод для рендеринга страницы пользователя."""
     profile = get_object_or_404(User, username=username)
-    if request.user != profile:
-        posts = get_published_posts(
-            Post.objects.filter(author=profile),
-            post_filter=True
+    posts = add_comment_count(
+        get_published_posts(
+            profile.posts.all(),
+            post_filter=request.user != profile
         )
-    else:
-        posts = get_published_posts(
-            Post.objects.filter(author=profile),
-            post_filter=False
-        )
-    posts = add_comment_count(posts)
+    )
     context = {
         'profile': profile,
         'page_obj': paginate_queryset(request, posts),

@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator
+from django.db.models import Count
 from django.utils import timezone
 
 from blog.constants import DEFAULT_POSTS_PER_PAGE
@@ -43,3 +44,8 @@ def get_published_posts(queryset, post_filter=True):
         )
 
     return queryset.order_by('-pub_date')
+
+
+def add_comment_count(queryset):
+    """Добавляет количество комментариев к постам."""
+    return queryset.annotate(comment_count=Count('comments'))
